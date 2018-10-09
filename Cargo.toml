@@ -1,0 +1,23 @@
+[package]
+name = "snake"
+version = "0.1.0"
+authors = ["Tal Globus <talglobus@gmail.com>"]
+description = "A demonstration game of snake while learning Rust."
+license = "© 2018 Tal Globus. All Rights Reserved"
+readme = "README.md"
+#repository = "https://github.com/pistondevelopers/conrod.git"
+#homepage = "https://github.com/pistondevelopers/conrod"
+#documentation = "http://docs.piston.rs/conrod/conrod/"
+categories = ["gui", "game"]
+
+#[package.metadata.docs.rs]
+#all-features = true
+
+#[lib]
+#name = "conrod"
+#path = "./src/lib.rs"
+
+[dependencies]
+piston_window = "0.81.0"
+rand = "0.5.5"
+find_folder = "0.3.0"
