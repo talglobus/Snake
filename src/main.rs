@@ -7,9 +7,7 @@ use piston_window::*;
 use snake::App;
 
 fn main() {
-	let mut window: PistonWindow = WindowSettings::new("Left/Right", [512; 2]).build().unwrap();
-//	let mut total_correct: i64 = 0;
-//	let mut total_time:
+	let mut window: PistonWindow = WindowSettings::new("Snake", [512; 2]).build().unwrap();
 
 	let assets = find_folder::Search::ParentsThenKids(3, 3)
 		.for_folder("assets")
