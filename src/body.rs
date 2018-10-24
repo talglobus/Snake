@@ -1,4 +1,5 @@
-const SNAKE_INITIAL_LENGTH : int16 = 3;
+const SNAKE_INITIAL_LENGTH : i16 = 3;
+const SNAKE_ADVANCE_DISTANCE: i16 = 1;
 
 #[derive(Clone, Copy)]
 pub struct Coord {
@@ -6,13 +7,14 @@ pub struct Coord {
 	y: i16
 }
 
-#[derive(Clone, Copy)]
+//#[derive(Clone, Copy)] // Removed as `Vec`s cannot be copied by default
 pub struct Snake {
-	pos: Vec<Coord>,
-	direction: Direction
+	pub pos: Vec<Coord>,
+	pub direction: Direction
 }
 
-enum Direction {
+//#[derive(Clone, Copy)]
+pub enum Direction {
 	Left,
 	Right,
 	Up,
@@ -30,11 +32,11 @@ pub trait Movable {
 	// Instance method signatures; these will return a string.
 //	fn name(&self) -> &'static str;
 //	fn noise(&self) -> &'static str;
-	fn advance(&self) -> Self;
+	fn advance(&mut self);
 
-	fn rotate(&self, direction: Direction) -> Self;
+	fn rotate(&mut self, direction: Direction);
 
-	fn grow(&self) -> Self;
+	fn grow(&mut self);
 
 	fn score(&self) -> i64;
 
@@ -47,58 +49,76 @@ pub trait Movable {
 impl Movable for Snake {
 	/// Creates a `Snake`, building a body of `SNAKE_INITIAL_LENGTH` correctly-positioned segments
 	fn new(head_pos: Coord, direction: Direction) -> Snake {
-		let pos = vec![head_pos];
+		let mut pos: Vec<Coord> = vec![head_pos];
 
-		let make_segment: fn(i16) -> Coord = match direction {
-			Direction::Left => |i: i16| Coord { x: head_pos.x + i, y: head_pos.y},
-			Direction::Right => |i: i16| Coord { x: head_pos.x - i, y: head_pos.y},
-			Direction::Up => |i: i16| Coord { x: head_pos.x, y: head_pos.y - i},
-			Direction::Down => |i: i16| Coord { x: head_pos.x, y: head_pos.y + i},
+		// This isolates the borrow of `direction` to prevent borrow checker errors on the return
+		pos = {
+			let make_segment = |i: i16| {
+				match direction {
+					Direction::Left => Coord { x: head_pos.x + i, y: head_pos.y},
+					Direction::Right => Coord { x: head_pos.x - i, y: head_pos.y},
+					Direction::Up => Coord { x: head_pos.x, y: head_pos.y - i},
+					Direction::Down => Coord { x: head_pos.x, y: head_pos.y + i},
+				}
+			};
+
+			for i in 1..SNAKE_INITIAL_LENGTH {
+				pos.push(make_segment(i));
+			}
+
+			pos
 		};
-
-		for i in 1..SNAKE_INITIAL_LENGTH {
-			pos.push(make_segment(i));
-		}
 
 		Snake {
 			pos, direction
 		}
 	}
 
-	fn advance(&self) -> Self {
-		let make_head_segment: fn(i16) -> Coord = match self.direction {
-			Direction::Left => |i: i16| Coord { x: self.head_pos.x - i, y: self.head_pos.y},
-			Direction::Right => |i: i16| Coord { x: self.head_pos.x + i, y: self.head_pos.y},
-			Direction::Up => |i: i16| Coord { x: self.head_pos.x, y: self.head_pos.y + i},
-			Direction::Down => |i: i16| Coord { x: self.head_pos.x, y: self.head_pos.y - i},
+	fn advance(&mut self) {
+
+		let make_segment
+			= |pos: &Vec<Coord>, direction: &Direction, i: i16| {
+			match direction {
+				Direction::Left => Coord { x: pos[0].x - i, y: pos[0].y},
+				Direction::Right => Coord { x: pos[0].x + i, y: pos[0].y},
+				Direction::Up => Coord { x: pos[0].x, y: pos[0].y + i},
+				Direction::Down => Coord { x: pos[0].x, y: pos[0].y - i},
+			}
 		};
 
-		self.pos.insert(0, make_head_segment(1));
-		self.pos.pop();	// TODO: Check if this can be combined with the previous line via chaining
-
-		return *self;	// TODO: Check if this can be shortened
-	}
-
-	fn rotate(&self, direction: Direction) -> Self {
-		Snake {
-			pos: self.pos,
-			direction
+		for i in 1..SNAKE_ADVANCE_DISTANCE {
+			let new_segment = make_segment(&self.pos, &self.direction,i);
+			self.pos.insert(0, new_segment);
+			self.pos.pop();
 		}
 	}
 
-	fn grow(&self) -> Self {
-		let make_segment: fn(i16) -> Coord = match direction {
-			Direction::Left => |i: i16| Coord { x: self.pos[-1].x + i, y: self.pos[-1].y},
-			Direction::Right => |i: i16| Coord { x: self.pos[-1].x - i, y: self.pos[-1].y},
-			Direction::Up => |i: i16| Coord { x: self.pos[-1].x, y: self.pos[-1].y - i},
-			Direction::Down => |i: i16| Coord { x: self.pos[-1].x, y: self.pos[-1].y + i},
+	fn rotate(&mut self, direction: Direction) {
+		self.direction = direction;
+	}
+
+	fn grow(&mut self) {
+//		let last_segment = ;
+
+		let make_segment
+			= |last_segment: &Option<&Coord>, direction: &Direction, i: i16| {
+			match last_segment {
+				Some (last_seg) => match direction {
+					Direction::Left => Coord { x: last_seg.x + i, y: last_seg.y},
+					Direction::Right => Coord { x: last_seg.x - i, y: last_seg.y},
+					Direction::Up => Coord { x: last_seg.x, y: last_seg.y - i},
+					Direction::Down => Coord { x: last_seg.x, y: last_seg.y + i},
+				},
+				None => Coord { x: 0, y: 0 }
+			}
 		};
 
-		self.pos.push(make_segment(1))
+		let new_segment = make_segment(&self.pos.last(), &self.direction, 1);
+		self.pos.push(new_segment);
 	}
 
 	fn score(&self) -> i64 {
-		self.pos.len()
+		self.pos.len() as i64
 	}
 }
 
