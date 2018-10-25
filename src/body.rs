@@ -3,11 +3,11 @@ const SNAKE_ADVANCE_DISTANCE: i16 = 1;
 
 #[derive(Clone, Copy)]
 pub struct Coord {
-	x: i16,
-	y: i16
+	pub x: i16,
+	pub y: i16
 }
 
-//#[derive(Clone, Copy)] // Removed as `Vec`s cannot be copied by default
+//#[derive(Clone, Copy, Deref)] // Removed as `Vec`s cannot be copied by default
 pub struct Snake {
 	pub pos: Vec<Coord>,
 	pub direction: Direction

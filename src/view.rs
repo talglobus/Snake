@@ -2,17 +2,18 @@ use piston_window::*;
 use side::Side;
 use body::Snake;
 
-pub struct View {
+// TODO: Check whether the lifetime below is appropriate
+pub struct View<'a> {
 	pub text: String,
-	pub side: Option<Side>,
-//	pub body: Snake,
+//	pub side: Option<Side>,
+	pub ref_snake: &'a Snake,
 }
 
 const SQUARE_WIDTH : f64 = 10.0;
 const SQUARE_PADDING : f64 = 1.0;
-const BOX_SIZE : i16 = 100;
+pub const BOX_SIZE : i16 = 100;
 
-impl View {
+impl<'a> View<'a> {
 	pub fn render(&mut self, c: Context, g: &mut G2d, glyphs: &mut Glyphs) {
 		// we will scale everything according to the window size
 		let view_size = c.get_view_size();
@@ -51,12 +52,12 @@ impl View {
 			let side_height = (h as f64) - side_top_padding - padding;
 			let side_width = (w as f64) * 0.5 - padding * 1.5;
 
-			// which rectangle will be brighter
-			let left_color_difference = match self.side {
-				None => 0.0,
-				Some(Side::Left) => 0.125,
-				Some(Side::Right) => -0.125,
-			};
+//			// which rectangle will be brighter
+//			let left_color_difference = match self.side {
+//				None => 0.0,
+//				Some(Side::Left) => 0.125,
+//				Some(Side::Right) => -0.125,
+//			};
 
 			// drawing part
 
@@ -73,26 +74,26 @@ impl View {
 					g,
 				).unwrap();
 
-			// draw left rectangle
-			rectangle(
-				[0.5 + left_color_difference, 0.0, 0.0, 1.0],
-				[padding, side_top_padding, side_width, side_height],
-				c.transform,
-				g,
-			);
-
-			// draw right rectangle
-			rectangle(
-				[0.5 - left_color_difference, 0.0, 0.0, 1.0],
-				[
-					side_width + padding * 2.0,
-					side_top_padding,
-					side_width,
-					side_height,
-				],
-				c.transform,
-				g,
-			);
+//			// draw left rectangle
+//			rectangle(
+//				[0.5 + left_color_difference, 0.0, 0.0, 1.0],
+//				[padding, side_top_padding, side_width, side_height],
+//				c.transform,
+//				g,
+//			);
+//
+//			// draw right rectangle
+//			rectangle(
+//				[0.5 - left_color_difference, 0.0, 0.0, 1.0],
+//				[
+//					side_width + padding * 2.0,
+//					side_top_padding,
+//					side_width,
+//					side_height,
+//				],
+//				c.transform,
+//				g,
+//			);
 		}
 	}
 }
