@@ -1,13 +1,13 @@
 const SNAKE_INITIAL_LENGTH : i16 = 3;
 const SNAKE_ADVANCE_DISTANCE: i16 = 1;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Coord {
 	pub x: i16,
 	pub y: i16
 }
 
-//#[derive(Clone, Copy, Deref)] // Removed as `Vec`s cannot be copied by default
+//#[derive(Clone, Copy, Deref, Debug)] // Removed as `Vec`s cannot be copied by default
 pub struct Snake {
 	pub pos: Vec<Coord>,
 	pub direction: Direction
@@ -57,8 +57,8 @@ impl Movable for Snake {
 				match direction {
 					Direction::Left => Coord { x: head_pos.x + i, y: head_pos.y},
 					Direction::Right => Coord { x: head_pos.x - i, y: head_pos.y},
-					Direction::Up => Coord { x: head_pos.x, y: head_pos.y - i},
-					Direction::Down => Coord { x: head_pos.x, y: head_pos.y + i},
+					Direction::Up => Coord { x: head_pos.x, y: head_pos.y + i},
+					Direction::Down => Coord { x: head_pos.x, y: head_pos.y - i},
 				}
 			};
 
@@ -81,12 +81,12 @@ impl Movable for Snake {
 			match direction {
 				Direction::Left => Coord { x: pos[0].x - i, y: pos[0].y},
 				Direction::Right => Coord { x: pos[0].x + i, y: pos[0].y},
-				Direction::Up => Coord { x: pos[0].x, y: pos[0].y + i},
-				Direction::Down => Coord { x: pos[0].x, y: pos[0].y - i},
+				Direction::Up => Coord { x: pos[0].x, y: pos[0].y - i},
+				Direction::Down => Coord { x: pos[0].x, y: pos[0].y + i},
 			}
 		};
 
-		for i in 1..SNAKE_ADVANCE_DISTANCE {
+		for i in 1..SNAKE_ADVANCE_DISTANCE + 1 {
 			let new_segment = make_segment(&self.pos, &self.direction,i);
 			self.pos.insert(0, new_segment);
 			self.pos.pop();
@@ -97,17 +97,15 @@ impl Movable for Snake {
 		self.direction = direction;
 	}
 
-	fn grow(&mut self) {
-//		let last_segment = ;
-
+	fn grow(&mut self) {	// TODO: Change this from `direction`-based to tail-direction-based
 		let make_segment
 			= |last_segment: &Option<&Coord>, direction: &Direction, i: i16| {
 			match last_segment {
 				Some (last_seg) => match direction {
 					Direction::Left => Coord { x: last_seg.x + i, y: last_seg.y},
 					Direction::Right => Coord { x: last_seg.x - i, y: last_seg.y},
-					Direction::Up => Coord { x: last_seg.x, y: last_seg.y - i},
-					Direction::Down => Coord { x: last_seg.x, y: last_seg.y + i},
+					Direction::Up => Coord { x: last_seg.x, y: last_seg.y + i},
+					Direction::Down => Coord { x: last_seg.x, y: last_seg.y - i},
 				},
 				None => Coord { x: 0, y: 0 }
 			}

@@ -13,8 +13,9 @@ use rand::Rng;
 use std::fmt;
 use std::time::{Instant, Duration};
 
-const F: f64 = 5.28;
-const TICK_DURATION: Duration = Duration::from_millis(250);	// TODO: Make this increase
+//const F: f64 = 5.28;
+const TICK_DURATION: f64 = 0.2;	// TODO: Make this decrease over time
+const WALL_FOOD_BUFFER: i16 = 2;
 
 //enum GameState {
 //	Init,
@@ -26,7 +27,7 @@ const TICK_DURATION: Duration = Duration::from_millis(250);	// TODO: Make this i
 
 enum GameState {
 	Init { snake: Snake },
-	Running { snake: Snake, last_updated: Instant },
+	Running { snake: Snake },
 	Win { snake: Snake },
 	Lose { snake: Snake },
 }
@@ -63,7 +64,7 @@ impl fmt::Display for GameState {
 //	time_elapsed: f64,
 //}
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 enum DirectionKey {		// TODO: Possibly unify this with `Direction` in `body.rs`
 	Up,
 	Down,
@@ -74,7 +75,11 @@ enum DirectionKey {		// TODO: Possibly unify this with `Direction` in `body.rs`
 
 pub struct App {
 	game_state: GameState,
+	time_since_update: f64,
+	updates_since_full_refresh: i32,
 	last_pressed: DirectionKey,
+	food_location: Coord,
+	prev_food_location: Coord,
 	newly_ended: bool,
 }
 
@@ -84,13 +89,24 @@ fn init_snake() -> Snake {
 		Direction::Left)	// TODO: Randomize this in the future?
 }
 
+fn pick_locus_random() -> Coord {
+	Coord {
+		x: rand::thread_rng().gen_range(WALL_FOOD_BUFFER, BOX_SIZE-WALL_FOOD_BUFFER+1),
+		y: rand::thread_rng().gen_range(WALL_FOOD_BUFFER, BOX_SIZE-WALL_FOOD_BUFFER+1),
+	}
+}
+
 impl App {
 	pub fn new() -> Self {
 		App {
 			game_state: GameState::Init {
 				snake: init_snake()
 			},
+			time_since_update: 0.0,
+			updates_since_full_refresh: -1,		// So bumping to `0` triggers refresh on first load
 			last_pressed: DirectionKey::None,
+			food_location: pick_locus_random(),
+			prev_food_location: pick_locus_random(),		// Unused before value change
 //			cumulative: Cumulatives {
 //				correct_rounds: 0,
 //				total_rounds: 0,
@@ -102,53 +118,19 @@ impl App {
 
 	pub fn update(&mut self, dt: f64) {
 		println!("{}", self.game_state);	// Debugging line to identify current state
-//		match self.game_state {
-//			GameState::Preparing { time_to_start } => {
-//				self.newly_ended = true;
-//
-//				let time_to_start = time_to_start - dt;
-//
-//				if time_to_start < 0.0 {
-//					self.game_state = GameState::Running {
-//						elapsed_time: 0.0,
-//						side: if rand::thread_rng().gen() {
-//							Side::Left
-//						} else {
-//							Side::Right
-//						},
-//					}
-//				} else {
-//					self.game_state = GameState::Preparing {
-//						time_to_start: time_to_start,
-//					}
-//				}
-//			}
-//			GameState::Running { elapsed_time, side } => {
-//				self.game_state = GameState::Running {
-//					elapsed_time: elapsed_time + dt,
-//					side: side,
-//				}
-//			}
-//			GameState::Init { .. } => {
-//
-//			}
-//			GameState::Result { elapsed_time, is_correct } => {
-//				if self.newly_ended {
-//					self.newly_ended = false;
-//					self.cumulative.correct_rounds += if is_correct { 1 } else { 0 };
-//					self.cumulative.total_rounds += 1;
-//					self.cumulative.time_elapsed += elapsed_time;
-//				}
-//			}
-//			_ => (),
-//		}
 
 		match &mut self.game_state {
-			GameState::Running { snake, last_updated } => {
-				let new_last_updated = Instant::now();
-
+			GameState::Running { snake } => {
+				self.time_since_update += dt;
+				println!("Last updated before {:?}", self.time_since_update);
 				// If at least one tick has gone by, change state corresponding to game action
-				if new_last_updated.duration_since(*last_updated) >= TICK_DURATION {
+				if self.time_since_update >= TICK_DURATION {
+					self.time_since_update = 0.0;
+					self.updates_since_full_refresh
+						= if self.updates_since_full_refresh >= 100 { 0 }
+						else { self.updates_since_full_refresh + 1 };
+
+					println!("Checking rotate");
 					match self.last_pressed {
 						DirectionKey::None => {},
 						DirectionKey::Left => snake.rotate(Direction::Left),
@@ -156,15 +138,33 @@ impl App {
 						DirectionKey::Right => snake.rotate(Direction::Right),
 						DirectionKey::Down => snake.rotate(Direction::Down),
 					}
+
+					println!("Advancing snake toward {:?}! {:?}", self.last_pressed, snake.pos);
+					snake.advance();	// Advance the snake one tick
+
+					// If the snake eats the food, cause the snake to grow and reposition the food
+					if snake.pos[0].x == self.food_location.x
+						&& snake.pos[0].y == self.food_location.y {
+						snake.grow();
+						self.prev_food_location = self.food_location.clone();
+						self.food_location = pick_locus_random();
+						println!("Old food location: {:?}", self.prev_food_location);
+						println!("New food location: {:?}", self.food_location);
+
+					}
 				}
 
-				snake.advance();	// Advance the snake one tick
 				// Always return the same `.game_state` at the end, which may even be unnecessary
-				// NOTE: In this case it seems it was avoidable, but if it weren't mutability...
-				//... cause issues with outputting a mutable reference where a struct is expected
-//				self.game_state = GameState::Running {
-//					snake, last_updated,
-//				}
+				// NOTE: In this case it seems it was avoidable, but otherwise the type system...
+				//... wouldn't like outputting a mutable reference where a struct is expected
+//				self.game_state = match self.game_state {
+//					GameState::Running { snake, .. } => GameState::Running {
+//						snake
+//					},
+//					_ => GameState::Running {
+//						snake: init_snake()
+//					}
+//				};
 			}
 			GameState::Init { .. } => {
 
@@ -172,17 +172,11 @@ impl App {
 			GameState::Win { snake } => {
 //				if self.newly_ended {
 //					self.newly_ended = false;
-//					self.cumulative.correct_rounds += if is_correct { 1 } else { 0 };
-//					self.cumulative.total_rounds += 1;
-//					self.cumulative.time_elapsed += elapsed_time;
 //				}
 			}
 			GameState::Lose { snake } => {
 //				if self.newly_ended {
 //					self.newly_ended = false;
-//					self.cumulative.correct_rounds += if is_correct { 1 } else { 0 };
-//					self.cumulative.total_rounds += 1;
-//					self.cumulative.time_elapsed += elapsed_time;
 //				}
 			}
 //			_ => (),
@@ -191,48 +185,28 @@ impl App {
 
 	pub fn key(&mut self, key: Key) {
 		match (&self.game_state, key) {
-//			(&GameState::Preparing { .. }, _) => self.game_state = GameState::FalseStart,
 			(&GameState::Running { .. }, Key::Left) => {
 				self.last_pressed = DirectionKey::Left;
-//				self.game_state = GameState::Running {
-//					snake, last_updated
-//				}
 			},
 			(&GameState::Running { .. }, Key::Up) => {
 				self.last_pressed = DirectionKey::Up;
-//				self.game_state = GameState::Running {
-//					snake, last_updated
-//				}
 			},
 			(&GameState::Running { .. }, Key::Right) => {
 				self.last_pressed = DirectionKey::Right;
-//				self.game_state = GameState::Running {
-//					snake, last_updated
-//				}
 			},
 			(&GameState::Running { .. }, Key::Down) => {
 				self.last_pressed = DirectionKey::Down;
-//				self.game_state = GameState::Running {
-//					snake, last_updated
-//				}
-//				self.game_state = GameState::Result {
-//					elapsed_time: elapsed_time,
-//					is_correct: match (key, side) {
-//						(Key::Left, Side::Left) | (Key::Right, Side::Right) => true,
-//						_ => false,
-//					},
-//				}
 			},
 			(&GameState::Init { .. }, Key::Space) => {
 				self.game_state = GameState::Running {
 					snake: init_snake(),	// TODO: This should really use the previous `snake`
-					last_updated: Instant::now()
 				}
 			}
 			(&GameState::Win { .. }, Key::Space) |
 			(&GameState::Lose { .. }, Key::Space) => {
 				self.last_pressed = DirectionKey::None;
 				self.newly_ended = true;
+				self.food_location = pick_locus_random();
 				self.game_state = GameState::Init {
 					snake: init_snake()
 				};
@@ -246,23 +220,30 @@ impl App {
 			GameState::Init { snake } => View {
 				text: String::from("Press <Space> to start"),
 				ref_snake: &snake,
+				ref_food: &self.food_location,
+				ref_prev_food: &self.prev_food_location,
+				is_full_refresh: true,
 			},
-//			GameState::Preparing { time_to_start } => View {
-//				text: format!("time to start: {:.*}", 2, time_to_start),
-//				side: None,
-//			},
-			GameState::Running { last_updated, snake } => View {
-//				text: format!("elapsed time: {:.*}", 2, elapsed_time),
+			GameState::Running { snake, .. } => View {
 				text: format!("Score: {:.*}", 2, snake.score()),
 				ref_snake: &snake,
+				ref_food: &self.food_location,
+				ref_prev_food: &self.prev_food_location,
+				is_full_refresh: self.updates_since_full_refresh == 0,
 			},
 			GameState::Win { snake } => View {
 				text: format!("You win! Score: {:.*}", 2, snake.score()),
 				ref_snake: &snake,
+				ref_food: &self.food_location,
+				ref_prev_food: &self.prev_food_location,
+				is_full_refresh: true,
 			},
 			GameState::Lose { snake } => View {
 				text: format!("You win! Score: {:.*}", 2, snake.score()),
 				ref_snake: &snake,
+				ref_food: &self.food_location,
+				ref_prev_food: &self.prev_food_location,
+				is_full_refresh: true,
 			},
 		}
 	}
