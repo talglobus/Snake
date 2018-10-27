@@ -87,13 +87,6 @@ impl<'a> View<'a> {
 			let side_height = (h as f64) - side_top_padding - padding;
 			let side_width = (w as f64) * 0.5 - padding * 1.5;
 
-//			// which rectangle will be brighter
-//			let left_color_difference = match self.side {
-//				None => 0.0,
-//				Some(Side::Left) => 0.125,
-//				Some(Side::Right) => -0.125,
-//			};
-
 			// drawing part
 
 			// clear the screen
@@ -141,29 +134,26 @@ impl<'a> View<'a> {
 			//... of the snake, but just marks where the snake most recently was to refill the grid
 
 			// There are four things that need to be done here:
-			// 1) Fill where in the grid the snake is now
-			// 2) Fill where in the grid the food is now
-			// 3) Fill where in the grid the snake just moved off
-			// 4) Fill where in the grid the food disappeared
+			// 1) Fill where in the grid the food is now
+			// 2) Fill where in the grid the food disappeared
+			// 3) Fill where in the grid the snake is now
+			// 4) Fill where in the grid the snake just moved off
 
 			// First, (1).	TODO: Remove duplicate filling of last snake square with below
+			fill_grid(FOOD_FILL, self.ref_food.x, self.ref_food.y);
+			// Then, (2)
+			fill_grid(EMPTY_FILL, self.ref_prev_food.x, self.ref_prev_food.y);
+			// Next, (3). // TODO: Remove duplicate filling of last snake square with above
 			{	// Note that `consumer` consumes the lazy `iter()`, and the brackets end its scope
 				for segment in self.ref_snake.pos.iter() {
 					fill_grid(SNAKE_FILL, segment.x, segment.y)
 				}
-//				let _consumer = self.ref_snake.pos.iter().map(
-//					|pos: &Coord| fill_grid(SNAKE_FILL, pos.x, pos.y)
-//				);
 			}
-			// Then, (2)
-			fill_grid(FOOD_FILL, self.ref_food.x, self.ref_food.y);
-			// Next, (3). // TODO: Remove duplicate filling of last snake square with above
+			// Finally, (4)
 			match self.ref_snake.pos.last() {
 				Some(Coord {x, y}) => fill_grid(EMPTY_FILL, *x, *y),
 				_ => ()
 			}
-			// Finally, (4)
-			fill_grid(EMPTY_FILL, self.ref_prev_food.x, self.ref_prev_food.y);
 
 		} // else {
 //			// calculate proper font size
