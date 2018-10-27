@@ -131,13 +131,16 @@ impl App {
 						= if self.updates_since_full_refresh >= FULL_REFRESH_ROUNDS { 0 }
 						else { self.updates_since_full_refresh + 1 };
 
-					println!("Checking rotate");
-					match self.last_pressed {
-						DirectionKey::None => {},
-						DirectionKey::Left => snake.rotate(Direction::Left),
-						DirectionKey::Up => snake.rotate(Direction::Up),
-						DirectionKey::Right => snake.rotate(Direction::Right),
-						DirectionKey::Down => snake.rotate(Direction::Down),
+					match (&self.last_pressed, &snake.direction) {
+						(DirectionKey::None, _) => {},
+						(DirectionKey::Left, Direction::Right)
+							| (DirectionKey::Up, Direction::Down)
+							| (DirectionKey::Right, Direction::Left)
+							| (DirectionKey::Down, Direction::Up) => {},
+						(DirectionKey::Left, _) => snake.rotate(Direction::Left),
+						(DirectionKey::Up, _) => snake.rotate(Direction::Up),
+						(DirectionKey::Right, _) => snake.rotate(Direction::Right),
+						(DirectionKey::Down, _) => snake.rotate(Direction::Down),
 					}
 
 					println!("Advancing snake toward {:?}! {:?}", self.last_pressed, snake.pos);
