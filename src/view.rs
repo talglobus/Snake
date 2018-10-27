@@ -24,7 +24,7 @@ struct Sides<A> {
 }
 
 const SQUARE_WIDTH : f64 = 10.0;
-const SQUARE_PADDING : f64 = 1.0;
+const SQUARE_PADDING : f64 = 0.5;
 pub const BOX_SIZE : i16 = 100;
 const OUTER_PADDING: Sides<f64> = Sides {
 	top: 40.0,
@@ -50,21 +50,21 @@ fn reset_grid(c: Context, g: &mut G2d) {
 		/ BOX_SIZE as f64 - SQUARE_PADDING;
 	// TODO: Find out if there is a way of staying square beyond leaving out square_height
 
+	let make_rectangle_shape = |x: i16, y: i16| {
+		[
+			OUTER_PADDING.left + (square_width + SQUARE_PADDING) * x as f64,
+			OUTER_PADDING.top + (square_height + SQUARE_PADDING) * y as f64,
+			square_width,
+			square_height
+		]
+	};
+
 	for x in 0..BOX_SIZE {
 		for y in 0..BOX_SIZE {
-			let new_rectangle_shape = [
-				OUTER_PADDING.left + (square_width + SQUARE_PADDING) * x as f64,
-				OUTER_PADDING.top + (square_height + SQUARE_PADDING) * y as f64,
-				square_width,
-				square_height
-			];
-
-			rectangle(
-				[1.0, 1.0, 1.0, 1.0],
-				new_rectangle_shape,
-				c.transform,
-				g,
-			);
+			rectangle(EMPTY_FILL,
+					  make_rectangle_shape(x, y),
+					  c.transform,
+					  g,);
 		}
 	}
 }

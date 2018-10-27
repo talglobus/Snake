@@ -14,8 +14,9 @@ use std::fmt;
 use std::time::{Instant, Duration};
 
 //const F: f64 = 5.28;
-const TICK_DURATION: f64 = 0.2;	// TODO: Make this decrease over time
+const TICK_DURATION: f64 = 0.04;	// TODO: Make this decrease over time
 const WALL_FOOD_BUFFER: i16 = 2;
+const FULL_REFRESH_ROUNDS: i32 = 1000;		// Number of updates between every full refresh
 
 //enum GameState {
 //	Init,
@@ -103,7 +104,7 @@ impl App {
 				snake: init_snake()
 			},
 			time_since_update: 0.0,
-			updates_since_full_refresh: -1,		// So bumping to `0` triggers refresh on first load
+			updates_since_full_refresh: 0,		// So bumping to `0` triggers refresh on first load
 			last_pressed: DirectionKey::None,
 			food_location: pick_locus_random(),
 			prev_food_location: pick_locus_random(),		// Unused before value change
@@ -127,7 +128,7 @@ impl App {
 				if self.time_since_update >= TICK_DURATION {
 					self.time_since_update = 0.0;
 					self.updates_since_full_refresh
-						= if self.updates_since_full_refresh >= 100 { 0 }
+						= if self.updates_since_full_refresh >= FULL_REFRESH_ROUNDS { 0 }
 						else { self.updates_since_full_refresh + 1 };
 
 					println!("Checking rotate");
