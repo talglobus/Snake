@@ -2,17 +2,17 @@ extern crate piston_window;
 extern crate rand;
 
 mod view;
-mod body;
+mod model;
 
 use view::{View, BOX_SIZE};
-use body::{Snake, Movable, Direction, Coord};
+use model::{Snake, Playable, Direction, Coord};
 use piston_window::keyboard::Key;
 use rand::Rng;
 use std::fmt;
 use std::mem;
 
 const TICK_DURATION: f64 = 0.04;	// TODO: Make this decrease over time
-const WALL_FOOD_BUFFER: i16 = 2;
+const WALL_FOOD_BUFFER: i16 = 0;
 // Set number of updates between every full refresh to 10% of complete re-render equivalent
 const FULL_REFRESH_ROUNDS: i32 = (BOX_SIZE * BOX_SIZE / 10) as i32;
 
@@ -51,7 +51,7 @@ impl fmt::Display for GameState {
 }
 
 #[derive(PartialEq, Debug)]
-enum DirectionKey {		// TODO: Possibly unify this with `Direction` in `body.rs`
+enum DirectionKey {		// TODO: Possibly unify this with `Direction` in `model.rs`
 	Up,
 	Down,
 	Left,
@@ -84,7 +84,7 @@ fn pick_locus_random() -> Coord {
 }
 
 fn is_body_collision(snake: &Snake) -> bool {
-	// If the snake head lies on its body, lose
+	// If the snake head lies on its model, return false
 	snake.pos[1..].iter().any(|&pos| {
 		match snake.pos.first() {
 			Some (some_pos) => (*some_pos == pos),
@@ -157,7 +157,7 @@ impl App {
 					println!("Advancing snake toward {:?}! {:?}", self.last_pressed, snake.pos);
 					snake.advance();	// Advance the snake one tick
 
-					// If the snake head lies on its body or escapes its bounds, lose
+					// If the snake head lies on its model or escapes its bounds, lose
 					if is_body_collision(snake) || is_head_beyond_bounds(snake) {
 						println!("Changing state");
 						self.newly_ended = true;

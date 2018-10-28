@@ -1,11 +1,4 @@
-const SNAKE_INITIAL_LENGTH : i16 = 3;	// Note that this includes an extra segment
-const SNAKE_ADVANCE_DISTANCE: i16 = 1;
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Coord {
-	pub x: i16,
-	pub y: i16
-}
+use model::{Coord, Direction, Playable};
 
 #[derive(Debug)] // Removed as `Vec`s cannot be copied by default
 pub struct Snake {
@@ -13,33 +6,20 @@ pub struct Snake {
 	pub direction: Direction
 }
 
-#[derive(Debug)]
-pub enum Direction {
-	Left,
-	Right,
-	Up,
-	Down,
-//	UpRight,
-//	UpLeft,
-//	DownRight,
-//	DownLeft,
+impl IntoIterator for Snake {
+	type Item = Coord;
+	type IntoIter = ::std::vec::IntoIter<Coord>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.pos.into_iter()
+	}
 }
 
-pub trait Movable {
-	// Static method signature; `Self` refers to the implementor type.
-	fn new(head_pos: Coord, direction: Direction) -> Self;
+const SNAKE_INITIAL_LENGTH : i16 = 3;	// Note that this includes an extra segment
+const SNAKE_ADVANCE_DISTANCE: i16 = 1;
 
-	fn advance(&mut self);
-
-	fn rotate(&mut self, direction: Direction);
-
-	fn grow(&mut self);
-
-	fn score(&self) -> i16;
-}
-
-impl Movable for Snake {
-	/// Creates a `Snake`, building a body of `SNAKE_INITIAL_LENGTH` correctly-positioned segments
+impl Playable for Snake {
+	/// Creates a `Snake`, building a model of `SNAKE_INITIAL_LENGTH` correctly-positioned segments
 	fn new(head_pos: Coord, direction: Direction) -> Snake {
 		let mut pos: Vec<Coord> = vec![head_pos];
 
@@ -67,7 +47,7 @@ impl Movable for Snake {
 	fn advance(&mut self) {
 
 		let make_segment
-			= |pos: &Vec<Coord>, direction: &Direction, i: i16| {
+		= |pos: &Vec<Coord>, direction: &Direction, i: i16| {
 			match direction {
 				Direction::Left => Coord { x: pos[0].x - i, y: pos[0].y},
 				Direction::Right => Coord { x: pos[0].x + i, y: pos[0].y},
@@ -89,7 +69,7 @@ impl Movable for Snake {
 
 	fn grow(&mut self) {	// TODO: Change this from `direction`-based to tail-direction-based
 		let make_segment
-			= |last_segment: &Option<&Coord>, direction: &Direction, i: i16| {
+		= |last_segment: &Option<&Coord>, direction: &Direction, i: i16| {
 			match last_segment {
 				Some (last_seg) => match direction {
 					Direction::Left => Coord { x: last_seg.x + i, y: last_seg.y},
