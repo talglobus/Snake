@@ -1,11 +1,9 @@
 extern crate piston_window;
 extern crate rand;
 
-mod side;
 mod view;
 mod body;
 
-use side::Side;
 use view::{View, BOX_SIZE};
 use body::{Snake, Movable, Direction, Coord};
 use piston_window::keyboard::Key;
@@ -52,12 +50,6 @@ impl fmt::Display for GameState {
 		})
 	}
 }
-
-//pub struct Cumulatives {
-//	correct_rounds: i64,
-//	total_rounds: i64,
-//	time_elapsed: f64,
-//}
 
 #[derive(PartialEq, Debug)]
 enum DirectionKey {		// TODO: Possibly unify this with `Direction` in `body.rs`
@@ -121,11 +113,6 @@ impl App {
 			last_pressed: DirectionKey::None,
 			food_location: pick_locus_random(),
 			prev_food_location: pick_locus_random(),		// Unused before value change
-//			cumulative: Cumulatives {
-//				correct_rounds: 0,
-//				total_rounds: 0,
-//				time_elapsed: 0.0,
-//			},
 			newly_ended: true,
 			next_state: None,
 		}
@@ -195,16 +182,8 @@ impl App {
 			GameState::Init { .. } => {
 
 			}
-			GameState::Win { snake } => {
-//				if self.newly_ended {
-//					self.newly_ended = false;
-//				}
-			}
-			GameState::Lose { .. } => {
-//				if self.newly_ended {
-//					self.newly_ended = false;
-//				}
-			}
+			GameState::Win { snake } => {}
+			GameState::Lose { .. } => {}
 		}
 	}
 

@@ -1,7 +1,6 @@
 extern crate rayon;
 
 use piston_window::*;
-use side::Side;
 use body::{Snake, Coord};
 //use self::rayon::*;
 use self::rayon::iter::*;        // TODO: Find a better way of doing this
