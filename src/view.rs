@@ -110,6 +110,34 @@ impl<'a> View<'a> {
 				/ BOX_SIZE as f64 - SQUARE_PADDING;
 			// TODO: Find out if there is a way of staying square beyond leaving out square_height
 
+			// calculate proper font size
+			let font_size = (w / 512.0 * 16.0) as u32;	// Change 16.0 back to 32.0 for one line
+
+			// add some padding for a better view
+			let padding = w / 512.0 * 20.0;
+
+			rectangle(
+				BACKGROUND_FILL,
+				[
+					0.0,
+					0.0,
+					w + padding,
+					font_size as f64 + padding + 2.0,	// TODO: Fix that `5.0` fudge constant
+				],
+				c.transform,
+				g,
+			);
+
+			// draw text
+			text::Text::new(font_size)
+				.draw(
+					&self.text,
+					glyphs,
+					&c.draw_state,
+					c.transform.trans(padding, (font_size as f64) + padding),
+					g,
+				).unwrap();
+
 			if self.is_full_refresh {
 				reset_grid(c, g);
 			}
@@ -155,25 +183,6 @@ impl<'a> View<'a> {
 				_ => ()
 			}
 
-		} // else {
-//			// calculate proper font size
-//			let font_size = (w / 512.0 * 16.0) as u32;	// Change 16.0 back to 32.0 for one line
-//
-//			// add some padding for a better view
-//			let padding = w / 512.0 * 20.0;
-
-//
-//			// draw text
-//			text::Text::new(font_size)
-//				.draw(
-//					&self.text,
-//					glyphs,
-//					&c.draw_state,
-//					c.transform.trans(padding, (font_size as f64) + padding),
-//					g,
-//				).unwrap();
-
-
-//		}
+		}
 	}
 }

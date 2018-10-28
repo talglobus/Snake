@@ -1,19 +1,19 @@
-const SNAKE_INITIAL_LENGTH : i16 = 3;
+const SNAKE_INITIAL_LENGTH : i16 = 16;	// Note that this includes an extra segment
 const SNAKE_ADVANCE_DISTANCE: i16 = 1;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Coord {
 	pub x: i16,
 	pub y: i16
 }
 
-//#[derive(Clone, Copy, Deref, Debug)] // Removed as `Vec`s cannot be copied by default
+#[derive(Debug)] // Removed as `Vec`s cannot be copied by default
 pub struct Snake {
 	pub pos: Vec<Coord>,
 	pub direction: Direction
 }
 
-//#[derive(Clone, Copy)]
+#[derive(Debug)]
 pub enum Direction {
 	Left,
 	Right,
@@ -38,7 +38,7 @@ pub trait Movable {
 
 	fn grow(&mut self);
 
-	fn score(&self) -> i64;
+	fn score(&self) -> i16;
 
 	// Traits can provide default method definitions.
 //	fn talk(&self) {
@@ -115,8 +115,8 @@ impl Movable for Snake {
 		self.pos.push(new_segment);
 	}
 
-	fn score(&self) -> i64 {
-		self.pos.len() as i64
+	fn score(&self) -> i16 {
+		self.pos.len() as i16
 	}
 }
 
