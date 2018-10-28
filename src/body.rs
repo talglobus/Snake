@@ -1,4 +1,4 @@
-const SNAKE_INITIAL_LENGTH : i16 = 16;	// Note that this includes an extra segment
+const SNAKE_INITIAL_LENGTH : i16 = 3;	// Note that this includes an extra segment
 const SNAKE_ADVANCE_DISTANCE: i16 = 1;
 
 #[derive(Clone, Copy, Debug, PartialEq)]

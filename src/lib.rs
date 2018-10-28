@@ -76,8 +76,7 @@ pub struct App {
 	food_location: Coord,
 	prev_food_location: Coord,
 	newly_ended: bool,
-	next_state: GameState,
-	is_change_state: bool,
+	next_state: Option<GameState>,
 }
 
 fn init_snake() -> Snake {
@@ -110,104 +109,86 @@ impl App {
 //				time_elapsed: 0.0,
 //			},
 			newly_ended: true,
-			next_state: GameState::Init {
-				snake: init_snake()
-			},
-			is_change_state: false,
+			next_state: None,
 		}
 	}
 
 	pub fn update(&mut self, dt: f64) {
 //		println!("{}", self.game_state);    // Debugging line to identify current state
 
-		if self.is_change_state {
+		if let Some(game_state) = &mut self.next_state {
 			println!("Replacing state to next state");
-			self.game_state = mem::replace(&mut self.next_state, GameState::Init {
+			self.game_state = mem::replace(game_state, GameState::Init {
 				snake: init_snake()
 			});
-			self.is_change_state = false;
-			println!("{:?}", self.game_state);
 		}
-//	}
 
-		{
-			match &mut self.game_state {
-				GameState::Running { snake } => {
-					self.time_since_update += dt;
-					// If at least one tick has gone by, change state corresponding to game action
-					if self.time_since_update >= TICK_DURATION {
-						println!("Updating, last updated before {:?}", self.time_since_update);
-						self.time_since_update = 0.0;
-						self.updates_since_full_refresh
-							= if self.updates_since_full_refresh >= FULL_REFRESH_ROUNDS { 0 }
-							else { self.updates_since_full_refresh + 1 };
+		// This next line would be more efficient if it were only run after a state change, i.e....
+		//... in the above `if` block. However, that breaks borrowing rules, so here it goes
+		self.next_state = None;
 
-						match (&self.last_pressed, &snake.direction) {
-							(DirectionKey::None, _) => {},
-							(DirectionKey::Left, Direction::Right)
-							| (DirectionKey::Up, Direction::Down)
-							| (DirectionKey::Right, Direction::Left)
-							| (DirectionKey::Down, Direction::Up) => {},
-							(DirectionKey::Left, _) => snake.rotate(Direction::Left),
-							(DirectionKey::Up, _) => snake.rotate(Direction::Up),
-							(DirectionKey::Right, _) => snake.rotate(Direction::Right),
-							(DirectionKey::Down, _) => snake.rotate(Direction::Down),
-						}
+		match &mut self.game_state {
+			GameState::Running { snake } => {
+				self.time_since_update += dt;
+				// If at least one tick has gone by, change state corresponding to game action
+				if self.time_since_update >= TICK_DURATION {
+					println!("Updating, last updated before {:?}", self.time_since_update);
+					self.time_since_update = 0.0;
+					self.updates_since_full_refresh
+						= if self.updates_since_full_refresh >= FULL_REFRESH_ROUNDS { 0 }
+						else { self.updates_since_full_refresh + 1 };
 
-						println!("Advancing snake toward {:?}! {:?}", self.last_pressed, snake.pos);
-						snake.advance();	// Advance the snake one tick
-
-						// If the snake head lies on its body, lose
-						if snake.pos[1..].to_vec().iter().any(|&pos| {
-							match snake.pos.first() {
-								Some (some_pos) => (*some_pos == pos),
-								None => false
-							}
-						}) {
-							println!("Changing state");
-							self.newly_ended = true;
-							self.next_state = GameState::Lose { snake: init_snake() };
-							self.is_change_state = true;
-						}
-
-						// If the snake eats the food, cause the snake to grow and reposition the food
-						if snake.pos[0].x == self.food_location.x
-							&& snake.pos[0].y == self.food_location.y {
-							snake.grow();
-							self.prev_food_location = self.food_location.clone();
-							self.food_location = pick_locus_random();
-							println!("Old food location: {:?}", self.prev_food_location);
-							println!("New food location: {:?}", self.food_location);
-
-						}
+					match (&self.last_pressed, &snake.direction) {
+						(DirectionKey::None, _) => {},
+						(DirectionKey::Left, Direction::Right)
+						| (DirectionKey::Up, Direction::Down)
+						| (DirectionKey::Right, Direction::Left)
+						| (DirectionKey::Down, Direction::Up) => {},
+						(DirectionKey::Left, _) => snake.rotate(Direction::Left),
+						(DirectionKey::Up, _) => snake.rotate(Direction::Up),
+						(DirectionKey::Right, _) => snake.rotate(Direction::Right),
+						(DirectionKey::Down, _) => snake.rotate(Direction::Down),
 					}
 
-					// Always return the same `.game_state` at the end, which may even be unnecessary
-					// NOTE: In this case it seems it was avoidable, but otherwise the type system...
-					//... wouldn't like outputting a mutable reference where a struct is expected
-//				self.game_state = match self.game_state {
-//					GameState::Running { snake, .. } => GameState::Running {
-//						snake
-//					},
-//					_ => GameState::Running {
-//						snake: init_snake()
-//					}
-//				};
-				}
-				GameState::Init { .. } => {
+					println!("Advancing snake toward {:?}! {:?}", self.last_pressed, snake.pos);
+					snake.advance();	// Advance the snake one tick
 
+					// If the snake head lies on its body, lose
+					if snake.pos[1..].to_vec().iter().any(|&pos| {
+						match snake.pos.first() {
+							Some (some_pos) => (*some_pos == pos),
+							None => false
+						}
+					}) {
+						println!("Changing state");
+						self.newly_ended = true;
+						self.next_state = Some(GameState::Lose { snake: init_snake() });
+					}
+
+					// If the snake eats the food, cause the snake to grow and reposition the food
+					if snake.pos[0].x == self.food_location.x
+						&& snake.pos[0].y == self.food_location.y {
+						snake.grow();
+						self.prev_food_location = self.food_location.clone();
+						self.food_location = pick_locus_random();
+						println!("Old food location: {:?}", self.prev_food_location);
+						println!("New food location: {:?}", self.food_location);
+
+					}
 				}
-				GameState::Win { snake } => {
+			}
+			GameState::Init { .. } => {
+
+			}
+			GameState::Win { snake } => {
 //				if self.newly_ended {
 //					self.newly_ended = false;
 //				}
-				}
-				GameState::Lose { .. } => {
+			}
+			GameState::Lose { .. } => {
 //				if self.newly_ended {
 //					self.newly_ended = false;
 //				}
-				}
-//			_ => (),
 			}
 		}
 	}
