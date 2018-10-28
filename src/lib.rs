@@ -92,6 +92,24 @@ fn pick_locus_random() -> Coord {
 	}
 }
 
+fn is_body_collision(snake: &Snake) -> bool {
+	// If the snake head lies on its body, lose
+	snake.pos[1..].to_vec().iter().any(|&pos| {
+		match snake.pos.first() {
+			Some (some_pos) => (*some_pos == pos),
+			None => false
+		}
+	})
+}
+
+fn is_head_beyond_bounds(snake: &Snake) -> bool {
+	if let Some(head) = snake.pos.first() {
+		head.x > BOX_SIZE || head.x < 0 || head.y > BOX_SIZE || head.y < 0
+	} else {
+		false
+	}
+}
+
 impl App {
 	pub fn new() -> Self {
 		App {
@@ -154,15 +172,12 @@ impl App {
 					snake.advance();	// Advance the snake one tick
 
 					// If the snake head lies on its body, lose
-					if snake.pos[1..].to_vec().iter().any(|&pos| {
-						match snake.pos.first() {
-							Some (some_pos) => (*some_pos == pos),
-							None => false
-						}
-					}) {
+					if is_body_collision(snake) || is_head_beyond_bounds(snake) {
 						println!("Changing state");
 						self.newly_ended = true;
-						self.next_state = Some(GameState::Lose { snake: init_snake() });
+						let movable_snake = mem::replace(snake, init_snake());
+						mem::replace(&mut self.next_state,
+									 Some(GameState::Lose { snake: movable_snake }));
 					}
 
 					// If the snake eats the food, cause the snake to grow and reposition the food
