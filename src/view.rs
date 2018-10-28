@@ -3,7 +3,7 @@ extern crate rayon;
 use piston_window::*;
 use body::{Snake, Coord};
 //use self::rayon::*;
-use self::rayon::iter::*;        // TODO: Find a better way of doing this
+//use self::rayon::iter::*;        // TODO: Find a better way of doing this
 
 // TODO: Check whether the lifetime below is appropriate
 pub struct View<'a> {
@@ -22,9 +22,9 @@ struct Sides<A> {
 	left: A,
 }
 
-const SQUARE_WIDTH : f64 = 10.0;
+//const SQUARE_WIDTH : f64 = 10.0;
 const SQUARE_PADDING : f64 = 0.5;
-pub const BOX_SIZE : i16 = 100;
+pub const BOX_SIZE : i16 = 50;
 const OUTER_PADDING: Sides<f64> = Sides {
 	top: 40.0,
 	right: 20.0,
@@ -100,8 +100,6 @@ impl<'a> View<'a> {
 					c.transform.trans(padding, (font_size as f64) + padding),
 					g,
 				).unwrap();
-
-			//////
 		} else {
 			let square_width = (w - OUTER_PADDING.left - OUTER_PADDING.right)
 				/ BOX_SIZE as f64 - SQUARE_PADDING;
