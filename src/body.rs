@@ -54,9 +54,7 @@ impl Movable for Snake {
 				}
 			};
 
-			for i in 1..SNAKE_INITIAL_LENGTH {
-				pos.push(make_segment(i));
-			}
+			(1..SNAKE_INITIAL_LENGTH).for_each(|i| pos.push(make_segment(i)));
 
 			pos
 		};

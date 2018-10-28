@@ -86,7 +86,7 @@ fn pick_locus_random() -> Coord {
 
 fn is_body_collision(snake: &Snake) -> bool {
 	// If the snake head lies on its body, lose
-	snake.pos[1..].to_vec().iter().any(|&pos| {
+	snake.pos[1..].iter().any(|&pos| {
 		match snake.pos.first() {
 			Some (some_pos) => (*some_pos == pos),
 			None => false
@@ -96,7 +96,7 @@ fn is_body_collision(snake: &Snake) -> bool {
 
 fn is_head_beyond_bounds(snake: &Snake) -> bool {
 	if let Some(head) = snake.pos.first() {
-		head.x > BOX_SIZE || head.x < 0 || head.y > BOX_SIZE || head.y < 0
+		head.x >= BOX_SIZE || head.x < 0 || head.y >= BOX_SIZE || head.y < 0
 	} else {
 		false
 	}

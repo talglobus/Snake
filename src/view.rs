@@ -171,11 +171,9 @@ impl<'a> View<'a> {
 			// Then, (2)
 			fill_grid(EMPTY_FILL, self.ref_prev_food.x, self.ref_prev_food.y);
 			// Next, (3). // TODO: Remove duplicate filling of last snake square with above
-			{	// Note that `consumer` consumes the lazy `iter()`, and the brackets end its scope
-				for segment in self.ref_snake.pos.iter() {
-					fill_grid(SNAKE_FILL, segment.x, segment.y)
-				}
-			}
+			self.ref_snake.pos.iter().for_each(
+				|segment| fill_grid(SNAKE_FILL, segment.x, segment.y)
+			);
 			// Finally, (4)
 			match self.ref_snake.pos.last() {
 				Some(Coord {x, y}) => fill_grid(EMPTY_FILL, *x, *y),
