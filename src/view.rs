@@ -100,6 +100,31 @@ impl<'a> View<'a> {
 					c.transform.trans(padding, (font_size as f64) + padding),
 					g,
 				).unwrap();
+		} else if self.text.contains("Game over!") {
+			// calculate proper font size
+			let font_size = (w / 512.0 * 16.0) as u32;    // Change 16.0 back to 32.0 for one line
+
+			// add some padding for a better view
+			let padding = w / 512.0 * 20.0;
+			// leave some space for text
+			let side_top_padding = (font_size as f64) + padding * 2.0;
+			let side_height = (h as f64) - side_top_padding - padding;
+			let side_width = (w as f64) * 0.5 - padding * 1.5;
+
+			// drawing part
+
+			// clear the screen
+			reset_grid(c, g);
+
+			// draw text
+			text::Text::new(font_size)
+				.draw(
+					&self.text,
+					glyphs,
+					&c.draw_state,
+					c.transform.trans(padding, (font_size as f64) + padding),
+					g,
+				).unwrap();
 		} else {
 			let square_width = (w - OUTER_PADDING.left - OUTER_PADDING.right)
 				/ BOX_SIZE as f64 - SQUARE_PADDING;

@@ -1,4 +1,5 @@
 use model::{Coord, Direction};
+use std::slice::Iter;
 
 pub trait Playable {
 	// Static method signature; `Self` refers to the implementor type.
@@ -9,6 +10,10 @@ pub trait Playable {
 	fn rotate(&mut self, direction: Direction);
 
 	fn grow(&mut self);
+
+	fn body_iter_with_head(&self) -> Iter<Coord>;
+
+	fn body_iter_without_head(&self) -> Iter<Coord>;
 
 	fn score(&self) -> i16;
 }

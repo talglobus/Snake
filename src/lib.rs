@@ -11,10 +11,10 @@ use rand::Rng;
 use std::fmt;
 use std::mem;
 
-const TICK_DURATION: f64 = 0.04;	// TODO: Make this decrease over time
+const TICK_DURATION: f64 = 0.04;	// TODO: Make this decrease over time, from 0.04
 const WALL_FOOD_BUFFER: i16 = 0;
 // Set number of updates between every full refresh to 10% of complete re-render equivalent
-const FULL_REFRESH_ROUNDS: i32 = (BOX_SIZE * BOX_SIZE / 10) as i32;
+const FULL_REFRESH_ROUNDS: i32 = (BOX_SIZE as i32 / 10 as i32) * BOX_SIZE as i32;
 
 #[derive(Debug)]
 pub enum GameState {			// TODO: Dehackify this working with `main.rs`
@@ -78,19 +78,34 @@ fn init_snake() -> Snake {
 
 fn pick_locus_random() -> Coord {
 	Coord {
-		x: rand::thread_rng().gen_range(WALL_FOOD_BUFFER, BOX_SIZE-WALL_FOOD_BUFFER+1),
-		y: rand::thread_rng().gen_range(WALL_FOOD_BUFFER, BOX_SIZE-WALL_FOOD_BUFFER+1),
+		x: rand::thread_rng().gen_range(WALL_FOOD_BUFFER, BOX_SIZE-WALL_FOOD_BUFFER),
+		y: rand::thread_rng().gen_range(WALL_FOOD_BUFFER, BOX_SIZE-WALL_FOOD_BUFFER),
+	}
+}
+
+fn pick_locus_off_snake(snake: &Snake) -> Coord {
+	let attempted_location = pick_locus_random();
+	// If any overlap exists, search again. Otherwise, return the point
+	if snake.body_iter_with_head().any(|&pos| {
+		attempted_location == pos
+	}) {
+		pick_locus_off_snake(snake)
+	} else {
+		attempted_location
 	}
 }
 
 fn is_body_collision(snake: &Snake) -> bool {
 	// If the snake head lies on its model, return false
-	snake.pos[1..].iter().any(|&pos| {
-		match snake.pos.first() {
-			Some (some_pos) => (*some_pos == pos),
-			None => false
+	match snake.pos.first() {
+		Some (some_pos) => {
+			snake.pos[1..].iter().any(|&pos| {		// TODO: Find a way to make this `[1..-1]`
+				*some_pos == pos
+			})
 		}
-	})
+		None => false
+	}
+
 }
 
 fn is_head_beyond_bounds(snake: &Snake) -> bool {
@@ -170,8 +185,8 @@ impl App {
 					if snake.pos[0].x == self.food_location.x
 						&& snake.pos[0].y == self.food_location.y {
 						snake.grow();
-						self.prev_food_location = self.food_location.clone();
-						self.food_location = pick_locus_random();
+						mem::replace(&mut self.prev_food_location, self.food_location);
+						self.food_location = pick_locus_off_snake(&snake);
 						println!("Old food location: {:?}", self.prev_food_location);
 						println!("New food location: {:?}", self.food_location);
 
@@ -242,7 +257,7 @@ impl App {
 				is_full_refresh: true,
 			},
 			GameState::Lose { snake } => View {
-				text: format!("You lose! Score: {:.*}", 2, snake.score()),
+				text: format!("Game over! Score: {:.*}", 2, snake.score()),
 				ref_snake: &snake,
 				ref_food: &self.food_location,
 				ref_prev_food: &self.prev_food_location,

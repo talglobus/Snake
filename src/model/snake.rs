@@ -1,18 +1,10 @@
 use model::{Coord, Direction, Playable};
+use std::slice::Iter;
 
 #[derive(Debug)] // Removed as `Vec`s cannot be copied by default
 pub struct Snake {
 	pub pos: Vec<Coord>,
 	pub direction: Direction
-}
-
-impl IntoIterator for Snake {
-	type Item = Coord;
-	type IntoIter = ::std::vec::IntoIter<Coord>;
-
-	fn into_iter(self) -> Self::IntoIter {
-		self.pos.into_iter()
-	}
 }
 
 const SNAKE_INITIAL_LENGTH : i16 = 3;	// Note that this includes an extra segment
@@ -56,6 +48,14 @@ impl Playable for Snake {
 			}
 		};
 
+		//////////////////////////////////////////////////////////////////////////
+
+//		{
+//			for segment in self.take(5) {
+//				println!("{:?}", segment);
+//			}
+//		}
+
 		for i in 1..SNAKE_ADVANCE_DISTANCE + 1 {
 			let new_segment = make_segment(&self.pos, &self.direction,i);
 			self.pos.insert(0, new_segment);
@@ -83,6 +83,14 @@ impl Playable for Snake {
 
 		let new_segment = make_segment(&self.pos.last(), &self.direction, 1);
 		self.pos.push(new_segment);
+	}
+
+	fn body_iter_with_head(& self) -> Iter<Coord> {
+		self.pos.iter()
+	}
+
+	fn body_iter_without_head(& self) -> Iter<Coord> {
+		self.pos[1..].iter()
 	}
 
 	fn score(&self) -> i16 {
