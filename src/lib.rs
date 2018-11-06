@@ -5,7 +5,8 @@ mod view;
 mod model;
 
 use view::{View, BOX_SIZE};
-use model::{Snake, Playable, Direction, Coord};
+use model::{Snake, Playable, Direction, Coord, init_snake, is_body_collision,
+			is_head_beyond_bounds, pick_locus_off_snake, pick_locus_within_buffer};
 use piston_window::keyboard::Key;
 use rand::Rng;
 use std::fmt;
@@ -70,63 +71,17 @@ pub struct App {
 	next_state: Option<GameState>,
 }
 
-fn init_snake() -> Snake {
-	Snake::new(
-		Coord{x: BOX_SIZE / 2, y: BOX_SIZE / 2},
-		Direction::Left)	// TODO: Randomize this in the future?
-}
-
-fn pick_locus_random() -> Coord {
-	Coord {
-		x: rand::thread_rng().gen_range(WALL_FOOD_BUFFER, BOX_SIZE-WALL_FOOD_BUFFER),
-		y: rand::thread_rng().gen_range(WALL_FOOD_BUFFER, BOX_SIZE-WALL_FOOD_BUFFER),
-	}
-}
-
-fn pick_locus_off_snake(snake: &Snake) -> Coord {
-	let attempted_location = pick_locus_random();
-	// If any overlap exists, search again. Otherwise, return the point
-	if snake.body_iter_with_head().any(|&pos| {
-		attempted_location == pos
-	}) {
-		pick_locus_off_snake(snake)
-	} else {
-		attempted_location
-	}
-}
-
-fn is_body_collision(snake: &Snake) -> bool {
-	// If the snake head lies on its model, return false
-	match snake.pos.first() {
-		Some (some_pos) => {
-			snake.pos[1..].iter().any(|&pos| {		// TODO: Find a way to make this `[1..-1]`
-				*some_pos == pos
-			})
-		}
-		None => false
-	}
-
-}
-
-fn is_head_beyond_bounds(snake: &Snake) -> bool {
-	if let Some(head) = snake.pos.first() {
-		head.x >= BOX_SIZE || head.x < 0 || head.y >= BOX_SIZE || head.y < 0
-	} else {
-		false
-	}
-}
-
 impl App {
 	pub fn new() -> Self {
 		App {
 			game_state: GameState::Init {
-				snake: init_snake()
+				snake: init_snake(BOX_SIZE)
 			},
 			time_since_update: 0.0,
 			updates_since_full_refresh: 0,		// So bumping to `0` triggers refresh on first load
 			last_pressed: DirectionKey::None,
-			food_location: pick_locus_random(),
-			prev_food_location: pick_locus_random(),		// Unused before value change
+			food_location: pick_locus_within_buffer(BOX_SIZE, WALL_FOOD_BUFFER),
+			prev_food_location: pick_locus_within_buffer(BOX_SIZE, WALL_FOOD_BUFFER),		// Unused before value change
 			newly_ended: true,
 			next_state: None,
 		}
@@ -138,7 +93,7 @@ impl App {
 		if let Some(game_state) = &mut self.next_state {
 			println!("Replacing state to next state");
 			self.game_state = mem::replace(game_state, GameState::Init {
-				snake: init_snake()
+				snake: init_snake(BOX_SIZE)
 			});
 		}
 
@@ -173,10 +128,10 @@ impl App {
 					snake.advance();	// Advance the snake one tick
 
 					// If the snake head lies on its model or escapes its bounds, lose
-					if is_body_collision(snake) || is_head_beyond_bounds(snake) {
+					if is_body_collision(snake) || is_head_beyond_bounds(snake, BOX_SIZE) {
 						println!("Changing state");
 						self.newly_ended = true;
-						let movable_snake = mem::replace(snake, init_snake());
+						let movable_snake = mem::replace(snake, init_snake(BOX_SIZE));
 						mem::replace(&mut self.next_state,
 									 Some(GameState::Lose { snake: movable_snake }));
 					}
@@ -186,7 +141,7 @@ impl App {
 						&& snake.pos[0].y == self.food_location.y {
 						snake.grow();
 						mem::replace(&mut self.prev_food_location, self.food_location);
-						self.food_location = pick_locus_off_snake(&snake);
+						self.food_location = pick_locus_off_snake(&snake, BOX_SIZE, WALL_FOOD_BUFFER);
 						println!("Old food location: {:?}", self.prev_food_location);
 						println!("New food location: {:?}", self.food_location);
 
@@ -217,16 +172,16 @@ impl App {
 			},
 			(&GameState::Init { .. }, Key::Space) => {
 				self.game_state = GameState::Running {
-					snake: init_snake(),
+					snake: init_snake(BOX_SIZE),
 				}
 			}
 			(&GameState::Win { .. }, Key::Space) |
 			(&GameState::Lose { .. }, Key::Space) => {
 				self.last_pressed = DirectionKey::None;
 				self.newly_ended = true;
-				self.food_location = pick_locus_random();
+				self.food_location = pick_locus_within_buffer(BOX_SIZE, WALL_FOOD_BUFFER);
 				self.game_state = GameState::Init {
-					snake: init_snake()
+					snake: init_snake(BOX_SIZE)
 				};
 			}
 			_ => (),
