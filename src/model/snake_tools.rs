@@ -1,5 +1,6 @@
 use model::{Coord, Direction, Playable, Snake};
 use rand::Rng;
+//use config;
 
 pub fn init_snake(box_size: i16) -> Snake {
 	Snake::new(
@@ -45,8 +46,4 @@ pub fn is_head_beyond_bounds(snake: &Snake, box_size: i16) -> bool {
 	} else {
 		false
 	}
-}
-
-fn get_3() -> i16 {
-	3
 }

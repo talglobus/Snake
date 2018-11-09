@@ -37,7 +37,10 @@ impl Playable for Snake {
 	}
 
 	fn advance(&mut self) {
+		self.advance_conditional_grow(&|_| false);
+	}
 
+	fn advance_conditional_grow(&mut self, condition: &impl Fn(&mut Self) -> bool) {
 		let make_segment
 		= |pos: &Vec<Coord>, direction: &Direction, i: i16| {
 			match direction {
@@ -48,18 +51,15 @@ impl Playable for Snake {
 			}
 		};
 
-		//////////////////////////////////////////////////////////////////////////
-
-//		{
-//			for segment in self.take(5) {
-//				println!("{:?}", segment);
-//			}
-//		}
-
+		// Note that the checking of condition is once per step, which should also give the...
+		//... appropriate behavior with a `SNAKE_ADVANCE_DISTANCE` greater than 1,...
+		//... though be sure that the "appropriate" behavior is the desired behavior
 		for i in 1..SNAKE_ADVANCE_DISTANCE + 1 {
 			let new_segment = make_segment(&self.pos, &self.direction,i);
 			self.pos.insert(0, new_segment);
-			self.pos.pop();
+			if !condition(self) {
+				self.pos.pop();
+			}
 		}
 	}
 
@@ -67,23 +67,64 @@ impl Playable for Snake {
 		self.direction = direction;
 	}
 
-	fn grow(&mut self) {	// TODO: Change this from `direction`-based to tail-direction-based
-		let make_segment
-		= |last_segment: &Option<&Coord>, direction: &Direction, i: i16| {
-			match last_segment {
-				Some (last_seg) => match direction {
-					Direction::Left => Coord { x: last_seg.x + i, y: last_seg.y},
-					Direction::Right => Coord { x: last_seg.x - i, y: last_seg.y},
-					Direction::Up => Coord { x: last_seg.x, y: last_seg.y + i},
-					Direction::Down => Coord { x: last_seg.x, y: last_seg.y - i},
-				},
-				None => Coord { x: 0, y: 0 }
-			}
-		};
+	fn grow(&mut self) {
+		let make_segment: fn(&Vec<Coord>, &Direction, i16) -> Coord =
+			if self.pos.len() < 3 { // If the length isn't long enough for tail-based, use old method
+				|body: &Vec<Coord>, direction: &Direction, i: i16| {
+					match body.last() {
+						Some (last_seg) => match direction {
+							Direction::Left => Coord { x: last_seg.x + i, y: last_seg.y },
+							Direction::Right => Coord { x: last_seg.x - i, y: last_seg.y },
+							Direction::Up => Coord { x: last_seg.x, y: last_seg.y + i },
+							Direction::Down => Coord { x: last_seg.x, y: last_seg.y - i },
+						},
+						None => Coord { x: 0, y: 0 }
+					}
+				}
+			} else {
+				|body: &Vec<Coord>, direction: &Direction, i: i16| {
+					let tail = body
+						.get(body.len()-3..)		// TODO: Check this for off-by-one errors
+						.unwrap();
 
-		let new_segment = make_segment(&self.pos.last(), &self.direction, 1);
+					let last = tail[1];
+					let sec_last = tail[0];
+
+					if tail[0].x == last.x && sec_last.y > last.y {			// Add segment below
+						Coord { x: last.x, y: last.y + i }
+					} else if sec_last.x == last.x {						// Add segment above
+						Coord { x: last.x, y: last.y - i }
+					} else if sec_last.y == last.y && sec_last.x > last.x {	// Add segment to left
+						Coord { x: last.x - i, y: last.y }
+					} else {												// Add segment to right
+						Coord { x: last.x + i, y: last.y }
+					}
+				}
+			};
+
+		let new_segment = make_segment(&self.pos, &self.direction, 1);
 		self.pos.push(new_segment);
+
+		// TODO: Replace the above with "advance-and-grow", moving onto the food with a new segment
 	}
+
+//	fn old_grow(&mut self) {	// TODO: Change this from `direction`-based to tail-direction-based
+//		let make_segment: fn(&Option<&Coord>, &Direction, i16) -> Coord
+//		= |last_segment: &Option<&Coord>, direction: &Direction, i: i16| {
+//			match last_segment {
+//				Some (last_seg) => match direction {
+//					Direction::Left => Coord { x: last_seg.x + i, y: last_seg.y},
+//					Direction::Right => Coord { x: last_seg.x - i, y: last_seg.y},
+//					Direction::Up => Coord { x: last_seg.x, y: last_seg.y + i},
+//					Direction::Down => Coord { x: last_seg.x, y: last_seg.y - i},
+//				},
+//				None => Coord { x: 0, y: 0 }
+//			}
+//		};
+//
+//		let new_segment = make_segment(&self.pos.last(), &self.direction, 1);
+//		self.pos.push(new_segment);
+//	}
 
 	fn body_iter_with_head(& self) -> Iter<Coord> {
 		self.pos.iter()

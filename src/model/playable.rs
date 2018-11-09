@@ -7,6 +7,8 @@ pub trait Playable {
 
 	fn advance(&mut self);
 
+	fn advance_conditional_grow(&mut self, condition: &impl Fn (&mut Self) -> bool);
+
 	fn rotate(&mut self, direction: Direction);
 
 	fn grow(&mut self);

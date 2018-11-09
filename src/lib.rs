@@ -125,26 +125,37 @@ impl App {
 					}
 
 					println!("Advancing snake toward {:?}! {:?}", self.last_pressed, snake.pos);
-					snake.advance();	// Advance the snake one tick
+
+					{
+						// The following line is an unfortunate attempt to keep the compiler happy
+						let food_location = self.food_location.clone();
+
+						snake.advance_conditional_grow(
+							&|snake| snake.pos[0].x == food_location.x
+								&& snake.pos[0].y == food_location.y);
+					}
 
 					// If the snake head lies on its model or escapes its bounds, lose
+					//... TODO: If `SNAKE_ADVANCE_DISTANCE` is over 1 this will not always work
 					if is_body_collision(snake) || is_head_beyond_bounds(snake, BOX_SIZE) {
-						println!("Changing state");
+						println!("Changing state to loss");
 						self.newly_ended = true;
 						let movable_snake = mem::replace(snake, init_snake(BOX_SIZE));
 						mem::replace(&mut self.next_state,
 									 Some(GameState::Lose { snake: movable_snake }));
 					}
 
-					// If the snake eats the food, cause the snake to grow and reposition the food
+					// If the snake has just eaten (landed on) the food, reposition the food....
+					//... TODO: If `SNAKE_ADVANCE_DISTANCE` is over 1 this will not always work
 					if snake.pos[0].x == self.food_location.x
 						&& snake.pos[0].y == self.food_location.y {
-						snake.grow();
 						mem::replace(&mut self.prev_food_location, self.food_location);
-						self.food_location = pick_locus_off_snake(&snake, BOX_SIZE, WALL_FOOD_BUFFER);
+						self.food_location = pick_locus_off_snake(
+							&snake,
+							BOX_SIZE,
+							WALL_FOOD_BUFFER);
 						println!("Old food location: {:?}", self.prev_food_location);
 						println!("New food location: {:?}", self.food_location);
-
 					}
 				}
 			}
