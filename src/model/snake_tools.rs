@@ -1,6 +1,5 @@
-use model::{Coord, Direction, Playable, Snake};
+use model::{Coord, Direction, Playable, Snake, config};
 use rand::Rng;
-//use config;
 
 pub fn init_snake(box_size: i16) -> Snake {
 	Snake::new(
@@ -31,7 +30,7 @@ pub fn is_body_collision(snake: &Snake) -> bool {
 	// If the snake head lies on its model, return false
 	match snake.pos.first() {
 		Some (some_pos) => {
-			snake.pos[1..].iter().any(|&pos| {		// TODO: Find a way to make this `[1..-1]`
+			snake.pos[1..snake.pos.len()-1].iter().any(|&pos| {
 				*some_pos == pos
 			})
 		}
