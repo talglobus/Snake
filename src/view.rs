@@ -1,7 +1,7 @@
 extern crate rayon;
 
 use piston_window::*;
-use model::{Snake, Coord};
+use model::{Snake, Coord, Playable};
 //use self::rayon::*;
 //use self::rayon::iter::*;        // TODO: Find a better way of doing this
 
@@ -189,12 +189,12 @@ impl<'a> View<'a> {
 			// 3) Fill where in the grid the snake is now
 			// 4) Fill where in the grid the snake just moved off
 
-			// First, (1).	TODO: Remove duplicate filling of last snake square with below
+			// First, (1)
 			fill_grid(FOOD_FILL, self.ref_food.x, self.ref_food.y);
 			// Then, (2)
 			fill_grid(EMPTY_FILL, self.ref_prev_food.x, self.ref_prev_food.y);
-			// Next, (3). // TODO: Remove duplicate filling of last snake square with above
-			self.ref_snake.pos.iter().for_each(
+			// Next, (3)
+			self.ref_snake.body_iter_with_head().for_each(
 				|segment| fill_grid(SNAKE_FILL, segment.x, segment.y)
 			);
 			// Finally, (4)
