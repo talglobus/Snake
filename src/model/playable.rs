@@ -11,8 +11,6 @@ pub trait Playable {
 
 	fn rotate(&mut self, direction: Direction);
 
-	fn grow(&mut self);
-
 	fn body_iter_with_head(&self) -> Iter<Coord>;
 
 	fn body_iter_without_head(&self) -> Iter<Coord>;
