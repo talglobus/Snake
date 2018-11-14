@@ -1,64 +1,14 @@
-extern crate piston_window;
-extern crate rand;
-
-mod view;
-mod model;
-
-use view::{View, BOX_SIZE};
-use model::{Snake, Playable, Direction, Coord, init_snake, is_body_collision,
-			is_head_beyond_bounds, pick_locus_off_snake, pick_locus_within_buffer};
-use piston_window::keyboard::Key;
-use rand::Rng;
-use std::fmt;
+use model::{Snake, Playable, Direction, DirectionKey, Coord, is_body_collision,
+			is_head_beyond_bounds, pick_locus_off_snake, pick_locus_within_buffer, GameState};
 use std::mem;
+use piston_window::keyboard::Key;
+use view::{View, BOX_SIZE};
 
-const TICK_DURATION: f64 = 0.04;	// TODO: Make this decrease over time, from 0.04
+// TODO: Move the following to a config file
+pub const TICK_DURATION: f64 = 0.04;	// TODO: Make this decrease over time, from 0.04
 const WALL_FOOD_BUFFER: i16 = 0;
 // Set number of updates between every full refresh to 10% of complete re-render equivalent
 const FULL_REFRESH_ROUNDS: i32 = (BOX_SIZE as i32 / 10 as i32) * BOX_SIZE as i32;
-
-#[derive(Debug)]
-pub enum GameState {			// TODO: Dehackify this working with `main.rs`
-	Init { snake: Snake },
-	Running { snake: Snake },
-	Win { snake: Snake },
-	Lose { snake: Snake },
-}
-
-// In order to use the `{}` marker, the trait `fmt::Display` must be implemented
-// manually for the type.
-impl fmt::Display for GameState {
-	// This trait requires `fmt` with this exact signature.
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		// Write strictly the first element into the supplied output
-		// stream: `f`. Returns `fmt::Result` which indicates whether the
-		// operation succeeded or failed. Note that `write!` uses syntax which
-		// is very similar to `println!`.
-//		write!(f, "{}", match self {
-//			GameState::Init => "Init",
-//			GameState::Preparing { .. } => "Preparing",
-//			GameState::Running { .. } => "Running",
-//			GameState::Result { .. } => "Result",
-//			GameState::FalseStart => "FalseStart",
-//		})
-
-		write!(f, "{}", match self {
-			GameState::Init { .. } => "Init",
-			GameState::Running { .. } => "Running",
-			GameState::Win { .. } => "Result",
-			GameState::Lose { .. } => "FalseStart",
-		})
-	}
-}
-
-#[derive(PartialEq, Debug)]
-enum DirectionKey {		// TODO: Possibly unify this with `Direction` in `model.rs`
-	Up,
-	Down,
-	Left,
-	Right,
-	None,
-}
 
 pub struct App {
 	game_state: GameState,
@@ -75,7 +25,7 @@ impl App {
 	pub fn new() -> Self {
 		App {
 			game_state: GameState::Init {
-				snake: init_snake(BOX_SIZE)
+				snake: Snake { ..Default::default() }
 			},
 			time_since_update: 0.0,
 			updates_since_full_refresh: 0,		// So bumping to `0` triggers refresh on first load
@@ -93,7 +43,7 @@ impl App {
 		if let Some(game_state) = &mut self.next_state {
 			println!("Replacing state to next state");
 			self.game_state = mem::replace(game_state, GameState::Init {
-				snake: init_snake(BOX_SIZE)
+				snake: Snake { ..Default::default() }
 			});
 		}
 
@@ -106,7 +56,7 @@ impl App {
 				self.time_since_update += dt;
 				// If at least one tick has gone by, change state corresponding to game action
 				if self.time_since_update >= TICK_DURATION {
-					println!("Updating, last updated before {:?}", self.time_since_update);
+//					println!("Updating, last updated before {:?}", self.time_since_update);
 					self.time_since_update = 0.0;
 					self.updates_since_full_refresh
 						= if self.updates_since_full_refresh >= FULL_REFRESH_ROUNDS { 0 }
@@ -140,7 +90,7 @@ impl App {
 					if is_body_collision(snake) || is_head_beyond_bounds(snake, BOX_SIZE) {
 						println!("Changing state to loss");
 						self.newly_ended = true;
-						let movable_snake = mem::replace(snake, init_snake(BOX_SIZE));
+						let movable_snake = mem::replace(snake, Snake { ..Default::default() });
 						mem::replace(&mut self.next_state,
 									 Some(GameState::Lose { snake: movable_snake }));
 					}
@@ -183,7 +133,7 @@ impl App {
 			},
 			(&GameState::Init { .. }, Key::Space) => {
 				self.game_state = GameState::Running {
-					snake: init_snake(BOX_SIZE),
+					snake: Snake { ..Default::default() },
 				}
 			}
 			(&GameState::Win { .. }, Key::Space) |
@@ -192,7 +142,7 @@ impl App {
 				self.newly_ended = true;
 				self.food_location = pick_locus_within_buffer(BOX_SIZE, WALL_FOOD_BUFFER);
 				self.game_state = GameState::Init {
-					snake: init_snake(BOX_SIZE)
+					snake: Snake { ..Default::default() }
 				};
 			}
 			_ => (),
@@ -200,6 +150,11 @@ impl App {
 	}
 
 	pub fn view(&mut self) -> View {
+//		{
+//			let this_self = &self;
+//			push_state(&this_self.game_state);
+//		}
+
 		match &self.game_state {
 			GameState::Init { snake } => View {
 				text: String::from("Press <Space> to start"),
@@ -229,6 +184,13 @@ impl App {
 				ref_prev_food: &self.prev_food_location,
 				is_full_refresh: true,
 			},
+		}
+	}
+
+	pub fn is_continue(&self) -> bool {
+		match self.game_state {
+			GameState::Lose { .. } | GameState::Win { .. } => false,
+			_ => true
 		}
 	}
 }

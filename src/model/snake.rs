@@ -1,7 +1,8 @@
+use serde_json;
 use model::{Coord, Direction, Playable};
 use std::slice::Iter;
 
-#[derive(Debug)] // Removed as `Vec`s cannot be copied by default
+#[derive(Debug, Serialize, Deserialize)] // Removed as `Vec`s cannot be copied by default
 pub struct Snake {
 	pub pos: Vec<Coord>,
 	pub direction: Direction
@@ -9,6 +10,19 @@ pub struct Snake {
 
 const SNAKE_INITIAL_LENGTH : i16 = 3;	// Note that this includes an extra segment
 const SNAKE_ADVANCE_DISTANCE: i16 = 1;
+
+impl Default for Snake {
+	fn default() -> Snake {
+		Snake {
+			pos: vec![
+				Coord { x: 50 / 2, y: 50 / 2 },
+				Coord { x: 50 / 2 + 1, y: 50 / 2 },
+				Coord { x: 50 / 2 + 2, y: 50 / 2 }
+			],		// TODO: Change `50` to config box size
+			direction: Direction::Left
+		}
+	}
+}
 
 impl Playable for Snake {
 	/// Creates a `Snake`, building a model of `SNAKE_INITIAL_LENGTH` correctly-positioned segments
@@ -68,11 +82,11 @@ impl Playable for Snake {
 	}
 
 	fn body_iter_with_head(& self) -> Iter<Coord> {
-		self.pos.iter()
+		self.pos[..self.pos.len()-1].iter()
 	}
 
 	fn body_iter_without_head(& self) -> Iter<Coord> {
-		self.pos[1..].iter()
+		self.pos[1..self.pos.len()-1].iter()
 	}
 
 	fn score(&self) -> i16 {
